@@ -38,11 +38,10 @@
         <div id="passwordModal" class="modal hidden">
             <div class="modal-content glass small-modal">
                 <h2>Nota Protetta</h2>
-                <p>Inserisci la password per sbloccare questa nota.</p>
-                <input type="password" id="passwordInput" placeholder="Password...">
+                <p>Usa la tua impronta digitale o il viso per sbloccare questa nota.</p>
                 <div class="modal-actions">
                     <button id="cancelPasswordBtn" class="btn-secondary">Annulla</button>
-                    <button id="submitPasswordBtn" class="btn-primary">Sblocca</button>
+                    <button id="submitPasswordBtn" class="btn-primary">Sblocca con Biometria</button>
                 </div>
             </div>
         </div>
@@ -50,14 +49,13 @@
         <!-- Set Password Modal -->
         <div id="setPasswordModal" class="modal hidden">
             <div class="modal-content glass small-modal">
-                <h2>Imposta Password</h2>
-                <p>Inserisci una password per proteggere questa nota.</p>
-                <input type="password" id="newPasswordInput" placeholder="Nuova password...">
+                <h2>Protezione Biometrica</h2>
+                <p>Vuoi proteggere questa nota usando la tua impronta digitale o il viso?</p>
                 <div class="modal-actions">
-                    <button id="removePasswordBtn" class="btn-danger hidden">Rimuovi</button>
+                    <button id="removePasswordBtn" class="btn-danger hidden">Rimuovi Protezione</button>
                     <div class="flex-spacer"></div>
                     <button id="cancelSetPasswordBtn" class="btn-secondary">Annulla</button>
-                    <button id="savePasswordBtn" class="btn-primary">Salva</button>
+                    <button id="savePasswordBtn" class="btn-primary">Attiva Protezione</button>
                 </div>
             </div>
         </div>
