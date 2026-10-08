@@ -1,4 +1,4 @@
-// Data structure: Note = { id: string, title: string, body: string, credentialId: string|null, updatedAt: number }
+// Data structure: Note = { id: string, title: string, body: string, updatedAt: number }
 
 let notes = JSON.parse(localStorage.getItem('pixel_notes')) || [];
 let currentNoteId = null;
@@ -17,27 +17,94 @@ function base64ToBuffer(base64) {
 }
 
 // DOM Elements
+const authScreen = document.getElementById('authScreen');
+const mainApp = document.getElementById('mainApp');
+const authBtn = document.getElementById('authBtn');
+const authMessage = document.getElementById('authMessage');
+
 const notesList = document.getElementById('notesList');
 const addNoteBtn = document.getElementById('addNoteBtn');
 
-// Note Modal
 const noteModal = document.getElementById('noteModal');
 const noteTitle = document.getElementById('noteTitle');
 const noteBody = document.getElementById('noteBody');
 const closeNoteBtn = document.getElementById('closeModalBtn');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
-const lockBtn = document.getElementById('lockBtn');
 
-// Password Unlock Modal
-const passwordModal = document.getElementById('passwordModal');
-const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
-const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+// Auth State Check
+const appCredentialId = localStorage.getItem('app_credential');
 
-// Set Password Modal
-const setPasswordModal = document.getElementById('setPasswordModal');
-const cancelSetPasswordBtn = document.getElementById('cancelSetPasswordBtn');
-const savePasswordBtn = document.getElementById('savePasswordBtn');
-const removePasswordBtn = document.getElementById('removePasswordBtn');
+if (appCredentialId) {
+    authMessage.textContent = "L'app è bloccata. Inserisci il PIN del telefono o usa la biometria per accedere alle tue note.";
+    authBtn.textContent = "Sblocca App";
+    authBtn.onclick = unlockApp;
+} else {
+    authMessage.textContent = "Questa app conterrà informazioni sensibili. Attiva la protezione tramite il PIN o la biometria del tuo telefono per continuare.";
+    authBtn.textContent = "Configura Sicurezza";
+    authBtn.onclick = setupAppSecurity;
+}
+
+async function setupAppSecurity() {
+    try {
+        const options = {
+            challenge: new Uint8Array(32),
+            rp: { name: "Pixel Notes" },
+            user: {
+                id: new Uint8Array(16),
+                name: "proprietario",
+                displayName: "Proprietario del dispositivo",
+            },
+            pubKeyCredParams: [{alg: -7, type: "public-key"}],
+            authenticatorSelection: {
+                authenticatorAttachment: "platform", // Forza l'uso di PIN/Biometria del dispositivo
+                userVerification: "required"
+            },
+            timeout: 60000,
+            attestation: "none"
+        };
+
+        const credential = await navigator.credentials.create({ publicKey: options });
+        localStorage.setItem('app_credential', bufferToBase64(credential.rawId));
+        
+        // Successo, entra nell'app
+        enterApp();
+    } catch (err) {
+        console.error(err);
+        alert('Impossibile configurare la sicurezza. Assicurati che il tuo dispositivo abbia un PIN o un sistema biometrico impostato. (' + err.message + ')');
+    }
+}
+
+async function unlockApp() {
+    try {
+        const rawIdBuffer = base64ToBuffer(appCredentialId);
+        const options = {
+            challenge: new Uint8Array(32),
+            allowCredentials: [{
+                id: rawIdBuffer,
+                type: 'public-key',
+                transports: ['internal'],
+            }],
+            userVerification: "required",
+            timeout: 60000
+        };
+
+        await navigator.credentials.get({ publicKey: options });
+        
+        // Successo, entra nell'app
+        enterApp();
+    } catch (err) {
+        console.error(err);
+        alert('Autenticazione fallita! ' + err.message);
+    }
+}
+
+function enterApp() {
+    authScreen.classList.add('hidden');
+    mainApp.classList.remove('hidden');
+    renderNotes();
+}
+
+// --- LOGICA DELLE NOTE ---
 
 function saveNotes() {
     localStorage.setItem('pixel_notes', JSON.stringify(notes));
@@ -45,53 +112,37 @@ function saveNotes() {
 
 function renderNotes() {
     notesList.innerHTML = '';
+    // Pulisce le vecchie note che avevano un credentialId specifico (migrazione)
+    notes = notes.map(n => {
+        if(n.credentialId || n.password) {
+            delete n.credentialId;
+            delete n.password;
+        }
+        return n;
+    });
+
     notes.sort((a, b) => b.updatedAt - a.updatedAt).forEach(note => {
         const card = document.createElement('div');
-        card.className = 'note-card' + (note.credentialId ? ' locked' : '');
+        card.className = 'note-card';
         
         const title = document.createElement('h3');
         title.textContent = note.title || 'Nuova nota';
         card.appendChild(title);
 
         const preview = document.createElement('p');
-        if (note.credentialId) {
-            preview.textContent = '••••••••';
-            const lockIcon = document.createElement('div');
-            lockIcon.className = 'lock-icon';
-            lockIcon.textContent = '🔒';
-            card.appendChild(lockIcon);
-        } else {
-            preview.textContent = note.body || 'Nessun testo...';
-        }
+        preview.textContent = note.body || 'Nessun testo...';
         card.appendChild(preview);
 
-        card.addEventListener('click', () => openNote(note.id));
+        card.addEventListener('click', () => showNoteEditor(note));
         notesList.appendChild(card);
     });
-}
-
-function openNote(id) {
-    const note = notes.find(n => n.id === id);
-    if (!note) return;
-
-    if (note.credentialId) {
-        currentNoteId = id;
-        passwordModal.classList.remove('hidden');
-    } else {
-        showNoteEditor(note);
-    }
 }
 
 function showNoteEditor(note) {
     currentNoteId = note.id;
     noteTitle.value = note.title;
     noteBody.value = note.body;
-    updateLockIcon(!!note.credentialId);
     noteModal.classList.remove('hidden');
-}
-
-function updateLockIcon(isLocked) {
-    lockBtn.textContent = isLocked ? '🔒' : '🔓';
 }
 
 addNoteBtn.addEventListener('click', () => {
@@ -99,7 +150,6 @@ addNoteBtn.addEventListener('click', () => {
         id: Date.now().toString(),
         title: '',
         body: '',
-        credentialId: null,
         updatedAt: Date.now()
     };
     notes.push(newNote);
@@ -131,107 +181,6 @@ function saveCurrentNote() {
     }
 }
 
-// Biometric unlock logic
-cancelPasswordBtn.addEventListener('click', () => {
-    passwordModal.classList.add('hidden');
-});
-
-submitPasswordBtn.addEventListener('click', async () => {
-    const note = notes.find(n => n.id === currentNoteId);
-    if (!note || !note.credentialId) return;
-
-    try {
-        const rawIdBuffer = base64ToBuffer(note.credentialId);
-        const options = {
-            challenge: new Uint8Array(32),
-            allowCredentials: [{
-                id: rawIdBuffer,
-                type: 'public-key',
-                transports: ['internal'],
-            }],
-            userVerification: "required",
-            timeout: 60000
-        };
-
-        await navigator.credentials.get({ publicKey: options });
-        
-        // Success
-        passwordModal.classList.add('hidden');
-        showNoteEditor(note);
-    } catch (err) {
-        console.error(err);
-        alert('Autenticazione fallita! ' + err.message);
-    }
-});
-
-// Set biometric protection logic
-lockBtn.addEventListener('click', () => {
-    const note = notes.find(n => n.id === currentNoteId);
-    if (!note) return;
-    
-    if (note.credentialId) {
-        removePasswordBtn.classList.remove('hidden');
-    } else {
-        removePasswordBtn.classList.add('hidden');
-    }
-    
-    setPasswordModal.classList.remove('hidden');
-});
-
-cancelSetPasswordBtn.addEventListener('click', () => {
-    setPasswordModal.classList.add('hidden');
-});
-
-savePasswordBtn.addEventListener('click', async () => {
-    const note = notes.find(n => n.id === currentNoteId);
-    if (!note) return;
-
-    try {
-        const options = {
-            challenge: new Uint8Array(32),
-            rp: { name: "Pixel Notes" },
-            user: {
-                id: new Uint8Array(16),
-                name: "user",
-                displayName: "Utente",
-            },
-            pubKeyCredParams: [{alg: -7, type: "public-key"}],
-            authenticatorSelection: {
-                authenticatorAttachment: "platform",
-                userVerification: "required"
-            },
-            timeout: 60000,
-            attestation: "none"
-        };
-
-        const credential = await navigator.credentials.create({ publicKey: options });
-        
-        // Save the rawId base64
-        note.credentialId = bufferToBase64(credential.rawId);
-        
-        // Migrate old password prop out if it exists
-        if(note.password) delete note.password;
-        
-        saveNotes();
-        updateLockIcon(true);
-        setPasswordModal.classList.add('hidden');
-    } catch (err) {
-        console.error(err);
-        alert('Impossibile configurare la biometria: ' + err.message);
-    }
-});
-
-removePasswordBtn.addEventListener('click', () => {
-    const note = notes.find(n => n.id === currentNoteId);
-    if (note) {
-        note.credentialId = null;
-        if(note.password) delete note.password;
-        saveNotes();
-        updateLockIcon(false);
-    }
-    setPasswordModal.classList.add('hidden');
-});
-
 // PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -240,6 +189,3 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
-
-// Initial render
-renderNotes();
