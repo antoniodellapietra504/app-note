@@ -1,0 +1,257 @@
+:root {
+    --bg-color: #0f172a;
+    --surface: #1e293b;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --danger: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+#app {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-top: 20px;
+}
+
+h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.fab {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    transition: transform 0.2s, background 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.fab:hover {
+    transform: scale(1.05);
+    background: var(--primary-hover);
+}
+
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+}
+
+.note-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    height: 160px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.note-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.note-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.note-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    flex-grow: 1;
+}
+
+.note-card.locked {
+    background: linear-gradient(135deg, var(--surface), #2d3748);
+}
+
+.lock-icon {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.glass {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    border-radius: 20px;
+    padding: 20px;
+    width: 90%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+.modal.hidden .glass {
+    transform: translateY(20px);
+}
+
+.small-modal {
+    max-width: 400px;
+    text-align: center;
+}
+
+input[type="text"], input[type="password"] {
+    width: 100%;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text);
+    padding: 12px 15px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus, input[type="password"]:focus {
+    border-color: var(--primary);
+}
+
+textarea {
+    width: 100%;
+    height: 300px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text);
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 1rem;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+textarea:focus {
+    border-color: var(--primary);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.flex-spacer {
+    flex-grow: 1;
+}
+
+button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s, transform 0.1s;
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.icon-btn {
+    background: transparent;
+    font-size: 1.5rem;
+    padding: 5px 10px;
+}
+.icon-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
